@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="BP Tracker">
+<title>BP Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;min-height:100vh;padding-bottom:80px}
+.header{background:#fff;border-bottom:1px solid #e8e8e8;padding:16px;display:flex;align-items:center;justify-content:space-between;padding-top:max(16px,env(safe-area-inset-top))}
+.header h1{font-size:18px;font-weight:500;color:#1a1a1a}
+.header p{font-size:11px;color:#888;margin-top:1px}
+.api-btn{display:flex;align-items:center;gap:5px;font-size:12px;color:#888;cursor:pointer;padding:6px 10px;border-radius:8px;border:1px solid #e8e8e8;background:#fff}
+.api-dot{width:7px;height:7px;border-radius:50%;background:#ddd}
+.api-dot.on{background:#16a34a}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e8e8e8;position:sticky;top:0;z-index:10}
+.tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:11px 4px;font-size:11px;color:#888;cursor:pointer}
+.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a;font-weight:500}
+.sec{display:none;padding:14px}
+.sec.active{display:block}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:14px;margin-bottom:10px}
+.warn{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#92400e;line-height:1.5}
+.upload-area{border:2px dashed #e0e0dc;border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:#fafaf8;margin-bottom:10px}
+.upload-area input{display:none}
+.u-icon{font-size:36px;margin-bottom:6px}
+.preview-img{width:100%;max-height:200px;object-fit:contain;border-radius:8px;margin-bottom:10px;display:none}
+.scanning{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px;text-align:center;display:none;margin-bottom:10px}
+.scanning.show{display:block}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid #bae6fd;border-top-color:#0284c7;border-radius:50%;animation:spin 0.7s linear infinite;margin-bottom:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.val-row{display:flex;gap:8px;margin-bottom:12px}
+.val-box{flex:1;background:#f9f9f7;border-radius:8px;padding:10px 6px;text-align:center;border:1px solid transparent}
+.v-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px}
+.v-num{font-size:24px;font-weight:500;color:#1a1a1a;line-height:1.1;margin:2px 0}
+.v-unit{font-size:9px;color:#888}
+.val-box.filled{border-color:#86efac;background:#f0fdf4}
+.sys .v-num{color:#e24b4a}
+.dia .v-num{color:#378add}
+.pulse .v-num{color:#d97706}
+.irow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.ig{flex:1;min-width:100px}
+.ig label{font-size:10px;color:#888;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px}
+.ig input,.ig select,.ig textarea{width:100%;font-size:14px;font-family:inherit;background:#fff;border:1px solid #ddd;border-radius:8px;padding:9px 10px;color:#1a1a1a;outline:none;-webkit-appearance:none}
+.ig textarea{resize:vertical;min-height:50px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 16px;border-radius:10px;border:1px solid #ddd;background:#fff;font-family:inherit;font-size:15px;color:#1a1a1a;cursor:pointer;width:100%}
+.btn:active{opacity:0.7}
+.btn:disabled{opacity:0.4}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-success{background:#f0fdf4;color:#16a34a;border-color:#86efac}
+.btn-scan{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.btn-del{background:none;border:none;color:#aaa;padding:6px 8px;width:auto;font-size:13px}
+.date-group{margin-bottom:14px}
+.date-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:6px;border-bottom:1px solid #eee;margin-bottom:8px}
+.rec-card{background:#fff;border:1px solid #eee;border-radius:10px;padding:12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.rec-time{font-size:13px;color:#888;min-width:40px;text-align:center}
+.rec-time span{display:block;font-size:9px}
+.rec-vals{flex:1}
+.rec-bp{font-size:17px;font-weight:500}
+.rec-detail{font-size:11px;color:#888;margin-top:2px}
+.rec-note{font-size:10px;color:#aaa;font-style:italic;margin-top:2px}
+.badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:500;margin-left:5px}
+.b-ok{background:#f0fdf4;color:#16a34a}
+.b-el{background:#fffbeb;color:#d97706}
+.b-hi{background:#fef2f2;color:#e24b4a}
+.b-lo{background:#eff6ff;color:#378add}
+.sum-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.sum-card{background:#f9f9f7;border-radius:8px;padding:12px;text-align:center}
+.s-label{font-size:10px;color:#888}
+.s-num{font-size:20px;font-weight:500;color:#1a1a1a;margin:2px 0}
+.s-unit{font-size:9px;color:#888}
+.chart-bars{display:flex;align-items:flex-end;gap:3px;height:70px;margin:10px 0 6px}
+.bar-grp{flex:1;display:flex;gap:1px;align-items:flex-end}
+.bar{border-radius:2px 2px 0 0;min-height:3px}
+.bar-s{background:#e24b4a}
+.bar-d{background:#378add}
+.chart-leg{display:flex;gap:12px}
+.leg-i{display:flex;align-items:center;gap:5px;font-size:11px;color:#888}
+.leg-dot{width:7px;height:7px;border-radius:50%}
+.empty{text-align:center;padding:40px 16px;color:#888;font-size:14px}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1a1a1a;border-radius:20px;padding:10px 20px;font-size:13px;z-index:200;opacity:0;transition:opacity 0.25s;pointer-events:none;white-space:nowrap;color:#fff}
+.toast.show{opacity:1}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:20px;width:100%;padding-bottom:max(20px,env(safe-area-inset-bottom))}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:6px}
+.modal p{font-size:12px;color:#888;margin-bottom:12px;line-height:1.6}
+.modal input{width:100%;font-size:13px;font-family:monospace;background:#f9f9f7;border:1px solid #e0e0dc;border-radius:8px;padding:10px 12px;color:#1a1a1a;outline:none;margin-bottom:10px}
+.modal-btns{display:flex;gap:8px}
+.api-ok{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 12px;font-size:12px;color:#16a34a;display:none;margin-bottom:10px}
+.api-ok.show{display:block}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>BP Tracker</h1>
+    <p>บันทึกความดันโลหิต</p>
+  </div>
+  <button class="api-btn" onclick="openModal()">
+    <div class="api-dot" id="apiDot"></div>
+    <span id="apiLbl">API Key</span>
+  </button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="sw('scan',this)">📷 สแกน</button>
+  <button class="tab" onclick="sw('manual',this)">✏️ กรอก</button>
+  <button class="tab" onclick="sw('records',this)">📋 บันทึก</button>
+  <button class="tab" onclick="sw('chart',this)">📊 กราฟ</button>
+</div>
+
+<div class="sec active" id="tab-scan">
+  <div class="warn" id="noKey">⚠️ กดปุ่ม <strong>API Key</strong> มุมบนขวาเพื่อตั้งค่าก่อนครับ</div>
+  <div class="card">
+    <div class="upload-area" onclick="document.getElementById('img').click()">
+      <input type="file" id="img" accept="image/*" capture="environment" onchange="handleImg(event)">
+      <img class="preview-img" id="prev">
+      <div id="ph"><div class="u-icon">📸</div><div style="font-size:14px;font-weight:500">ถ่ายรูปหรืออัปโหลดรูป</div><div style="font-size:12px;color:#888;margin-top:2px">จากเครื่องวัดความดัน</div></div>
+    </div>
+    <div class="scanning" id="scanning"><div class="spin"></div><div style="font-size:13px;color:#0369a1">AI กำลังอ่านค่า...</div></div>
+    <button class="btn btn-scan" id="scanBtn" onclick="scan()" disabled>🔍 สแกนด้วย AI</button>
+  </div>
+  <div class="card" id="resCard" style="display:none">
+    <div class="val-row">
+      <div class="val-box sys filled"><div class="v-label">SYS ตัวบน</div><div class="v-num" id="rSys">—</div><div class="v-unit">mmHg</div></div>
+      <div class="val-box dia filled"><div class="v-label">DIA ตัวล่าง</div><div class="v-num" id="rDia">—</div><div class="v-unit">mmHg</div></div>
+      <div class="val-box pulse filled"><div class="v-label">PULSE ชีพจร</div><div class="v-num" id="rPulse">—</div><div class="v-unit">bpm</div></div>
+    </div>
+    <div class="irow">
+      <div class="ig"><label>วันที่</label><input type="date" id="rDate"></div>
+      <div class="ig"><label>เวลา</label><input type="time" id="rTime"></div>
+    </div>
+    <div class="irow">
+      <div class="ig"><label>ช่วงเวลา</label><select id="rSes"><option value="เช้า">เช้า</option><option value="กลางวัน">กลางวัน</option><option value="เย็น">เย็น</option><option value="กลางคืน">กลางคืน</option></select></div>
+      <div class="ig"><label>แขน</label><select id="rArm"><option value="แขนซ้าย">แขนซ้าย</option><option value="แขนขวา">แขนขวา</option></select></div>
+    </div>
+    <div class="irow"><div class="ig"><label>บันทึกเพิ่มเติม</label><textarea id="rNote" placeholder="เช่น หลังทานยา..."></textarea></div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-success" onclick="save('scan')" style="flex:1">💾 บันทึก</button>
+      <button class="btn" onclick="reset()" style="flex:0.4">ล้าง</button>
+    </div>
+  </div>
+</div>
+
+<div class="sec" id="tab-manual">
+  <div class="card">
+    <div style="font-size:14px;font-weight:500;color:#1a1a1a;margin-bottom:12px">กรอกค่าเอง</div>
+    <div class="val-row">
+      <div class="val-box sys"><div class="v-label">SYS ตัวบน</div><input type="number" id="mSys" placeholder="120" style="width:100%;text-align:center;font-size:28px;font-weight:500;border:none;background:none;color:#e24b4a;outline:none;padding:2px 0"><div class="v-unit">mmHg</div></div>
+      <div class="val-box dia"><div class="v-label">DIA ตัวล่าง</div><input type="number" id="mDia" placeholder="80" style="width:100%;text-align:center;font-size:28px;font-weight:500;border:none;background:none;color:#378add;outline:none;padding:2px 0"><div class="v-unit">mmHg</div></div>
+      <div class="val-box pulse"><div class="v-label">PULSE ชีพจร</div><input type="number" id="mPulse" placeholder="70" style="width:100%;text-align:center;font-size:28px;font-weight:500;border:none;background:none;color:#d97706;outline:none;padding:2px 0"><div class="v-unit">bpm</div></div>
+    </div>
+    <div class="irow"><div class="ig"><label>วันที่</label><input type="date" id="mDate"></div><div class="ig"><label>เวลา</label><input type="time" id="mTime"></div></div>
+    <div class="irow">
+      <div class="ig"><label>ช่วงเวลา</label><select id="mSes"><option value="เช้า">เช้า</option><option value="กลางวัน">กลางวัน</option><option value="เย็น">เย็น</option><option value="กลางคืน">กลางคืน</option></select></div>
+      <div class="ig"><label>แขน</label><select id="mArm"><option value="แขนซ้าย">แขนซ้าย</option><option value="แขนขวา">แขนขวา</option></select></div>
+    </div>
+    <div class="irow"><div class="ig"><label>บันทึกเพิ่มเติม</label><textarea id="mNote" placeholder="..."></textarea></div></div>
+    <button class="btn btn-primary" onclick="save('manual')">💾 บันทึก</button>
+  </div>
+</div>
+
+<div class="sec" id="tab-records">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span style="font-size:15px;font-weight:500">บันทึกทั้งหมด</span>
+    <button class="btn" style="width:auto;padding:7px 12px;font-size:13px" onclick="exportCSV()">⬇️ CSV</button>
+  </div>
+  <div id="recList"></div>
+</div>
+
+<div class="sec" id="tab-chart">
+  <div class="sum-grid" id="sumCards"></div>
+  <div class="card">
+    <div style="font-size:11px;color:#888;margin-bottom:4px">แนวโน้ม 7 ครั้งล่าสุด</div>
+    <div class="chart-bars" id="chartBars"></div>
+    <div class="chart-leg"><div class="leg-i"><div class="leg-dot" style="background:#e24b4a"></div>SYS</div><div class="leg-i"><div class="leg-dot" style="background:#378add"></div>DIA</div></div>
+  </div>
+  <div class="card"><div style="font-size:11px;color:#888;margin-bottom:8px">ค่าเฉลี่ยรายวัน (5 วันล่าสุด)</div><div id="dailyList"></div></div>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>Anthropic API Key</h3>
+    <p>Key เก็บในโทรศัพท์เท่านั้น ไม่ได้ส่งไปที่อื่นนอกจาก Anthropic โดยตรง<br>รับ Key ได้ที่ <strong>console.anthropic.com</strong> → API Keys</p>
+    <div class="api-ok" id="apiOk">✅ บันทึก API Key แล้ว</div>
+    <input type="password" id="keyInput" placeholder="sk-ant-api03-...">
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="saveKey()" style="flex:1">บันทึก</button>
+      <button class="btn" onclick="delKey()" style="flex:0.5;color:#e24b4a">ลบ Key</button>
+      <button class="btn" onclick="closeModal()" style="flex:0.5">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let recs = JSON.parse(localStorage.getItem('bp5')||'[]');
+let sv = {sys:null,dia:null,pulse:null};
+let imgB64 = null, imgType = 'image/jpeg';
+
+const getKey = () => localStorage.getItem('bp_key5')||'';
+
+function updKey(){
+  const k=getKey();
+  document.getElementById('apiDot').className='api-dot'+(k?' on':'');
+  document.getElementById('apiLbl').textContent=k?'API พร้อม':'API Key';
+  document.getElementById('noKey').style.display=k?'none':'block';
+}
+function openModal(){
+  const k=getKey();
+  document.getElementById('keyInput').value=k;
+  document.getElementById('apiOk').className='api-ok'+(k?' show':'');
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+function saveKey(){
+  const v=document.getElementById('keyInput').value.trim();
+  if(!v){toast('กรุณากรอก API Key');return;}
+  localStorage.setItem('bp_key5',v);
+  document.getElementById('apiOk').classList.add('show');
+  updKey(); toast('บันทึก API Key แล้ว');
+  setTimeout(closeModal,700);
+}
+function delKey(){
+  localStorage.removeItem('bp_key5');
+  document.getElementById('keyInput').value='';
+  document.getElementById('apiOk').classList.remove('show');
+  updKey(); toast('ลบ API Key แล้ว');
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function setNow(d,t,s){
+  const n=new Date();
+  if(d)document.getElementById(d).value=n.toISOString().slice(0,10);
+  if(t)document.getElementById(t).value=n.toTimeString().slice(0,5);
+  if(s){const h=n.getHours();document.getElementById(s).value=h>=5&&h<12?'เช้า':h>=12&&h<17?'กลางวัน':h>=17&&h<21?'เย็น':'กลางคืน';}
+}
+setNow('rDate','rTime','rSes'); setNow('mDate','mTime','mSes');
+
+function sw(tab,btn){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='records')renderRecs();
+  if(tab==='chart')renderChart();
+}
+
+function handleImg(e){
+  const f=e.target.files[0]; if(!f) return;
+  imgType=f.type||'image/jpeg';
+  const r=new FileReader();
+  r.onload=ev=>{
+    imgB64=ev.target.result.split(',')[1];
+    const p=document.getElementById('prev');
+    p.src=ev.target.result; p.style.display='block';
+    document.getElementById('ph').style.display='none';
+    document.getElementById('scanBtn').disabled=false;
+    document.getElementById('resCard').style.display='none';
+  };
+  r.readAsDataURL(f);
+}
+
+async function scan(){
+  const key=getKey();
+  if(!key){openModal();return;}
+  if(!imgB64){toast('กรุณาเลือกรูปก่อน');return;}
+  document.getElementById('scanning').classList.add('show');
+  document.getElementById('scanBtn').disabled=true;
+  try{
+    // เรียก Anthropic API โดยตรง — ใช้ได้บน Netlify (https hosting)
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-policy':'allow'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:200,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:imgType,data:imgB64}},
+          {type:'text',text:'นี่คือภาพจากเครื่องวัดความดันโลหิต สกัดค่าตัวเลข ตอบเป็น JSON เท่านั้น: {"sys":number_or_null,"dia":number_or_null,"pulse":number_or_null}'}
+        ]}]
+      })
+    });
+    if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+resp.status);}
+    const data=await resp.json();
+    const text=data.content?.find(c=>c.type==='text')?.text||'';
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    sv={sys:parsed.sys,dia:parsed.dia,pulse:parsed.pulse};
+    document.getElementById('rSys').textContent=parsed.sys??'—';
+    document.getElementById('rDia').textContent=parsed.dia??'—';
+    document.getElementById('rPulse').textContent=parsed.pulse??'—';
+    setNow('rDate','rTime','rSes');
+    document.getElementById('resCard').style.display='block';
+    toast('สแกนสำเร็จ ✓');
+  }catch(err){
+    toast('ผิดพลาด: '+err.message);
+  }finally{
+    document.getElementById('scanning').classList.remove('show');
+    document.getElementById('scanBtn').disabled=false;
+  }
+}
+
+function status(sys,dia){
+  if(sys<90||dia<60)return{l:'ความดันต่ำ',c:'b-lo'};
+  if(sys<120&&dia<80)return{l:'ปกติ',c:'b-ok'};
+  if(sys<130&&dia<80)return{l:'สูงเล็กน้อย',c:'b-el'};
+  if(sys<140||dia<90)return{l:'สูงระดับ 1',c:'b-el'};
+  return{l:'สูงระดับ 2',c:'b-hi'};
+}
+
+function save(src){
+  let sys,dia,pulse,date,time,session,arm,note;
+  if(src==='scan'){
+    sys=sv.sys;dia=sv.dia;pulse=sv.pulse;
+    date=document.getElementById('rDate').value;time=document.getElementById('rTime').value;
+    session=document.getElementById('rSes').value;arm=document.getElementById('rArm').value;
+    note=document.getElementById('rNote').value;
+  }else{
+    sys=parseInt(document.getElementById('mSys').value);
+    dia=parseInt(document.getElementById('mDia').value);
+    pulse=parseInt(document.getElementById('mPulse').value)||null;
+    date=document.getElementById('mDate').value;time=document.getElementById('mTime').value;
+    session=document.getElementById('mSes').value;arm=document.getElementById('mArm').value;
+    note=document.getElementById('mNote').value;
+  }
+  if(!sys||!dia||isNaN(sys)||isNaN(dia)){toast('ต้องระบุค่า SYS และ DIA');return;}
+  if(!date){toast('ต้องระบุวันที่');return;}
+  recs.unshift({id:Date.now(),sys,dia,pulse,date,time,session,arm,note});
+  localStorage.setItem('bp5',JSON.stringify(recs));
+  toast('บันทึกแล้ว ✓');
+  if(src==='scan')reset();else resetM();
+}
+
+function reset(){
+  imgB64=null;sv={sys:null,dia:null,pulse:null};
+  document.getElementById('img').value='';
+  document.getElementById('prev').style.display='none';
+  document.getElementById('ph').style.display='block';
+  document.getElementById('scanBtn').disabled=true;
+  document.getElementById('resCard').style.display='none';
+  document.getElementById('rNote').value='';
+}
+function resetM(){
+  ['mSys','mDia','mPulse','mNote'].forEach(id=>document.getElementById(id).value='');
+  setNow('mDate','mTime','mSes');
+}
+function delRec(id){
+  recs=recs.filter(r=>r.id!==id);
+  localStorage.setItem('bp5',JSON.stringify(recs));
+  renderRecs();
+}
+
+function renderRecs(){
+  const el=document.getElementById('recList');
+  if(!recs.length){el.innerHTML='<div class="empty">ยังไม่มีบันทึก</div>';return;}
+  const g={};
+  recs.forEach(r=>{if(!g[r.date])g[r.date]=[];g[r.date].push(r);});
+  const dates=Object.keys(g).sort((a,b)=>b.localeCompare(a));
+  el.innerHTML=dates.map(d=>{
+    const lbl=new Date(d+'T00:00:00').toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    const items=g[d].sort((a,b)=>(b.time||'').localeCompare(a.time||''));
+    return`<div class="date-group"><div class="date-label">${lbl} · ${items.length} ครั้ง</div>${items.map(r=>{
+      const st=status(r.sys,r.dia);
+      return`<div class="rec-card">
+        <div class="rec-time">${r.time||'—'}<span>${r.session||''}</span></div>
+        <div class="rec-vals">
+          <div class="rec-bp"><span style="color:#e24b4a">${r.sys}</span>/<span style="color:#378add">${r.dia}</span><span style="font-size:11px;color:#888"> mmHg</span><span class="badge ${st.c}">${st.l}</span></div>
+          <div class="rec-detail">${r.pulse?`ชีพจร ${r.pulse} bpm · `:''}${r.arm||''}</div>
+          ${r.note?`<div class="rec-note">${r.note}</div>`:''}
+        </div>
+        <button class="btn btn-del" onclick="delRec(${r.id})">ลบ</button>
+      </div>`;
+    }).join('')}</div>`;
+  }).join('');
+}
+
+function renderChart(){
+  if(recs.length){
+    const as=Math.round(recs.reduce((a,b)=>a+b.sys,0)/recs.length);
+    const ad=Math.round(recs.reduce((a,b)=>a+b.dia,0)/recs.length);
+    const pr=recs.filter(r=>r.pulse);
+    const ap=pr.length?Math.round(pr.reduce((a,b)=>a+b.pulse,0)/pr.length):'—';
+    document.getElementById('sumCards').innerHTML=`
+      <div class="sum-card"><div class="s-label">เฉลี่ย SYS</div><div class="s-num" style="color:#e24b4a">${as}</div><div class="s-unit">mmHg</div></div>
+      <div class="sum-card"><div class="s-label">เฉลี่ย DIA</div><div class="s-num" style="color:#378add">${ad}</div><div class="s-unit">mmHg</div></div>
+      <div class="sum-card"><div class="s-label">เฉลี่ย PULSE</div><div class="s-num">${ap}</div><div class="s-unit">bpm</div></div>
+      <div class="sum-card"><div class="s-label">บันทึกทั้งหมด</div><div class="s-num">${recs.length}</div><div class="s-unit">ครั้ง</div></div>`;
+  }else document.getElementById('sumCards').innerHTML='';
+  const last7=[...recs].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(-7);
+  const maxV=Math.max(...last7.map(r=>r.sys),160);const minV=50;const rng=maxV-minV;
+  document.getElementById('chartBars').innerHTML=last7.length?last7.map(r=>`
+    <div class="bar-grp">
+      <div class="bar bar-s" style="height:${Math.round(((r.sys-minV)/rng)*64)+4}px"></div>
+      <div class="bar bar-d" style="height:${Math.round(((r.dia-minV)/rng)*64)+4}px"></div>
+    </div>`).join(''):'<span style="font-size:12px;color:#888">ยังไม่มีข้อมูล</span>';
+  const g={};recs.forEach(r=>{if(!g[r.date])g[r.date]=[];g[r.date].push(r);});
+  const d5=Object.keys(g).sort((a,b)=>b.localeCompare(a)).slice(0,5);
+  document.getElementById('dailyList').innerHTML=d5.length?d5.map(d=>{
+    const rs=g[d];
+    const as2=Math.round(rs.reduce((a,b)=>a+b.sys,0)/rs.length);
+    const ad2=Math.round(rs.reduce((a,b)=>a+b.dia,0)/rs.length);
+    const lbl=new Date(d+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',month:'short',day:'numeric'});
+    const st=status(as2,ad2);
+    return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #eee">
+      <div style="font-size:11px;color:#888;min-width:80px">${lbl}</div>
+      <div style="font-size:15px;font-weight:500"><span style="color:#e24b4a">${as2}</span>/<span style="color:#378add">${ad2}</span></div>
+      <div style="flex:1"></div>
+      <span class="badge ${st.c}">${st.l}</span>
+      <div style="font-size:10px;color:#888">${rs.length}ครั้ง</div>
+    </div>`;
+  }).join(''):'<div style="font-size:12px;color:#888">ยังไม่มีข้อมูล</div>';
+}
+
+function exportCSV(){
+  if(!recs.length){toast('ไม่มีข้อมูล');return;}
+  const hdr='วันที่,เวลา,ช่วงเวลา,SYS,DIA,PULSE,แขน,สถานะ,บันทึก\n';
+  const rows=recs.map(r=>{
+    const st=status(r.sys,r.dia);
+    return`${r.date},${r.time||''},${r.session||''},${r.sys},${r.dia},${r.pulse||''},${r.arm||''},${st.l},"${(r.note||'').replace(/"/g,'""')}"`;
+  }).join('\n');
+  const blob=new Blob(['\uFEFF'+hdr+rows],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`bp_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();URL.revokeObjectURL(url);
+  toast('ดาวน์โหลด CSV แล้ว');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.className='toast show';
+  setTimeout(()=>t.className='toast',2500);
+}
+
+updKey();renderRecs();renderChart();
+</script>
+</body>
+</html>
